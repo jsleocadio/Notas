@@ -1,6 +1,8 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { AlertController, ModalController } from '@ionic/angular';
 import { ModalPage } from '../modal/modal.page';
+import { AuthService } from '../servicos/auth.service';
 import { DadosService, Nota } from '../servicos/dados.service';
 
 @Component({
@@ -16,6 +18,8 @@ export class HomePage {
     private cd: ChangeDetectorRef,
     private alertCtrl: AlertController,
     private modalCtrl: ModalController,
+    private auth: AuthService,
+    private roteador: Router,
   ) {
     this.dados.getNotas().subscribe(res => {
       this.notas = res;
@@ -23,6 +27,10 @@ export class HomePage {
     });
   }
 
+  async logout() {
+    await this.auth.logout();
+    this.roteador.navigateByUrl('/', { replaceUrl: true });
+  }
   async addNota() {
     const alert = await this.alertCtrl.create({
       header: 'Nova nota',

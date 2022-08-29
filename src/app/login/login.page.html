@@ -1,0 +1,25 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Suas Notas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <form (ngSubmit)="login()" [formGroup]="credenciais">
+    <ion-item fill="solid" class="ion-margin-bottom">
+      <ion-input type="email" placeholder="E-mail" formControlName="email"></ion-input>
+      <ion-note slot="error" *ngIf="(email.dirty || email.touched) && email.errors">E-mail inválido</ion-note>
+    </ion-item>
+    <ion-item fill="solid" class="ion-margin-bottom">
+      <ion-input type="password" placeholder="Senha" formControlName="senha" (keyup.enter)="login()"></ion-input>
+      <ion-note slot="error" *ngIf="(senha.dirty || senha.touched) && senha.errors">A senha precisa ter no mínimo 6 caracteres</ion-note>
+    </ion-item>
+
+    <ion-button type="submit" expand="block" [disabled]="!credenciais.valid">Acessar</ion-button>
+    <ion-button type="button" expand="block" color="secondary" (click)="registrar()">Criar conta</ion-button>
+    <ion-button type="button" expand="block" color="danger" (click)="GoogleLogin()">
+      <ion-icon name="logo-google" slot="start"></ion-icon>
+      Login com o Google
+    </ion-button>
+  </form>
+</ion-content>
