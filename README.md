@@ -8,7 +8,7 @@ Once you have created the project you need to find the web configuration which l
 
 ![image](https://user-images.githubusercontent.com/73944895/187245878-2cec7029-c923-48d7-b1ee-02c43ee38b9e.png)
 
-If it’s a new project, click on the web icon below “Get started by adding Firebase to your app” to start a new web app and give it a name, you will see the configuration in the next step now.
+If it’s a new project, click on the web icon below “**Get started by adding Firebase to your app**” to start a new web app and give it a name, you will see the configuration in the next step now.
 
 Leave this config block open (or copy it already) until our app is ready so we can insert it in our environment!
 
@@ -18,23 +18,34 @@ Additionally we have to enable the database, so select **Firestore Database** fr
 
 Here we can set the default **security rules** for our database and because this is a simple tutorial we’ll roll with the **test mode** which allows everyone access.
 
+Because we want to work with users we also need to go to the **Authentication** tab, click **Get started** again and activate the **Email/Password** provider. This allows us to create user with a standard email/ps combination.
+
+![image](https://user-images.githubusercontent.com/73944895/187490868-8fa6d73e-e20d-4295-8e9c-96399567241b.png)
+
 # Starting our Ionic App & Firebase Integration
 
 Now we are ready to setup the Ionic app, so generate a new app with an additional page and service for our logic and then use the AngularFire schematic to add all required packages and changes to the project:
 
 ```
-ionic start devdacticFire blank --type=angular --capacitor
-cd ./devdacticFire
+ionic start ProjectName blank --type=angular --capacitor
+cd ./ProjectName
  
 # Generate a page and service
+ionic g page login
 ionic g page modal
+ionic g service services/auth
 ionic g service services/data
- 
+
 # Install Firebase and AngularFire
 ng add @angular/fire
 ```
+The last command is the most important as it starts the AngularFire schematic, which has become a lot more powerful over the years! You should select the according functions that your app needs, in our case select Authentication and Firestore.
 
-Now we need the **configuration from Firebase** that you hopefully kept open in your browser, and we can add it right inside our **environments/environment.ts** like this:
+![image](https://user-images.githubusercontent.com/73944895/187491615-5b81d564-49c4-4619-938d-a1e051a2c9ad.png)
+
+After that a browser will open to log in with Google, which hopefully reads your list of **Firebase apps so you can select the Firebase project and app your created in the beginning!**
+
+As a result the schematic will automatically fill your **environments/environment.ts** file – if not make sure you manually add the Firebase configuration from the first step like this:
 
 ```
 export const environment = {
@@ -50,37 +61,311 @@ export const environment = {
 };
 ```
 
-Finally we set up the connection to Firebase by passing in our configuration. This looks different from previous versions as we are now using **factory functions** to setup all services that we need, like in our example the <code>getFirestore()</code>.
-
-Go ahead and change the **src/app/app.module.ts** to:
+On top of that the schematic injected everything necessary into our **src/app/app.module.ts** using the new Firebase 9 modular approach:
 
 ```
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { RouteReuseStrategy } from '@angular/router';
- 
+
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
- 
+
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
- 
+import { initializeApp,provideFirebaseApp } from '@angular/fire/app';
 import { environment } from '../environments/environment';
-import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
-import { getFirestore, provideFirestore } from '@angular/fire/firestore';
- 
+import { provideAuth,getAuth } from '@angular/fire/auth';
+import { provideFirestore,getFirestore } from '@angular/fire/firestore';
+
 @NgModule({
   declarations: [AppComponent],
-  entryComponents: [],
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule,
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideFirestore(() => getFirestore())
-  ],
+  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, 
+    provideFirebaseApp(() => initializeApp(environment.firebase)), 
+    provideAuth(() => getAuth()), 
+    provideFirestore(() => getFirestore())],
   providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
   bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}
 ```
-Injecting more services like authentication or file storage basically follow the same setup!
+Again, if the schematic failed for some reason that’s how your module should look like before you continue!
+
+Now we can also quickly touch the routing of our app to display the login page as the first page, and use the default home page for the inside area.
+
+We don’t have authentication implemented yet, but we can already use the [AngularFire auth guards](https://github.com/angular/angularfire/blob/master/docs/auth/router-guards.md) in two cool ways:
+
+* Protect access to “inside” pages by redirecting unauthorized users to the login
+* Preventing access to the login page for previously authenticated users, so they are automatically forwarded to the “inside” area of the app
+
+This is done with the helping pipes and services of AngularFire that you can now add inside the **src/app/app-routing.module.ts**:
+
+```
+import { NgModule } from '@angular/core';
+import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
+import { 
+  redirectUnauthorizedTo,
+  redirectLoggedInTo,
+  canActivate,
+} from '@angular/fire/auth-guard'
+
+const redirectUnauthorizedToLogin = () => redirectUnauthorizedTo(['']);
+const redirectLoggedInToHome = () => redirectLoggedInTo(['home']);
+const routes: Routes = [
+  {
+    path: 'home',
+    loadChildren: () => import('./home/home.module').then( m => m.HomePageModule),
+    ...canActivate(redirectUnauthorizedToLogin),
+  },
+  {
+    path: 'modal',
+    loadChildren: () => import('./modal/modal.module').then( m => m.ModalPageModule),
+    ...canActivate(redirectUnauthorizedToLogin),
+  },
+  {
+    path: '',
+    loadChildren: () => import('./login/login.module').then( m => m.LoginPageModule),
+    ...canActivate(redirectLoggedInToHome),
+  },
+  {
+    path: '**',
+    redirectTo: '',
+    pathMatch: 'full'
+  },
+];
+
+@NgModule({
+  imports: [
+    RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })
+  ],
+  exports: [RouterModule]
+})
+export class AppRoutingModule { }
+```
+Now we can begin with the actual authentication of users!
+
+# Building the Authentication Logic
+
+The whole logic will be in a separate service, and we need jsut three functions that simply call the according Firebase function to create a new user, sign in a user or end the current session.
+
+For all these calls you need to add the **Auth** reference, which we injected inside the constructor.
+
+Since these calls sometimes fail and I wasn’t very happy about the error handling, I wrapped them in try/catch blocks so we have an easier time when we get to our actual page.
+
+Let’s begin with the **src/app/services/auth.service.ts** now and change it to:
+
+```
+import { Injectable } from '@angular/core';
+import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, GoogleAuthProvider, getAuth } from '@angular/fire/auth';
+
+
+@Injectable({
+  providedIn: 'root'
+})
+export class AuthService {
+
+  constructor(private auth: Auth) { }
+
+  async registro({ email, senha }) {
+    try {
+      const usuario = await createUserWithEmailAndPassword(
+        this.auth,
+        email,
+        senha
+      );
+      return usuario;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async login({ email, senha }) {
+    try {
+      const usuario = await signInWithEmailAndPassword(this.auth, email, senha);
+      return usuario;
+    } catch (e) {
+      return null;
+    }
+  }
+  
+  async loginGoogle() {
+    const auth = getAuth();
+    const provider = new GoogleAuthProvider();
+    try {
+      const usuario = await signInWithPopup(auth, provider);
+      return usuario;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  logout() {
+    return signOut(this.auth);
+  }
+}
+```
+
+**Ps:** <code>loginGoogle()</code> was created to implements a login through Google credentials. The method <code>signInWithPopup()</code> requires an auth and a provider.
+
+That’s already everything in terms of logic. Now we need to capture the user information for the registration, and therefore we import the <code>ReactiveFormsModule</code> in our **src/app/login/login.module.ts** now:
+
+```
+import { NgModule } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+ 
+import { IonicModule } from '@ionic/angular';
+ 
+import { LoginPageRoutingModule } from './login-routing.module';
+ 
+import { LoginPage } from './login.page';
+ 
+@NgModule({
+  imports: [
+    CommonModule,
+    FormsModule,
+    IonicModule,
+    LoginPageRoutingModule,
+    ReactiveFormsModule,
+  ],
+  declarations: [LoginPage],
+})
+export class LoginPageModule {}
+```
+
+Since we want to make it easy, we’ll handle both registration and signup with the same form on one page.
+
+But since we added the whole logic already to a service, there’s not much left for us to do besides showing a casual loading indicator or presenting an alert if the action failed.
+
+If the registration or login is successful and we get back an **user** object, we immediately route the user forward to our inside area.
+
+Go ahead by changing the **src/app/login/login.page.ts** to:
+
+```
+import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
+import { AlertController, LoadingController } from '@ionic/angular';
+import { AuthService } from '../servicos/auth.service';
+
+@Component({
+  selector: 'app-login',
+  templateUrl: './login.page.html',
+  styleUrls: ['./login.page.scss'],
+})
+export class LoginPage implements OnInit {
+  credenciais: FormGroup;
+
+  constructor(
+    private fb: FormBuilder,
+    private loadingCtrl: LoadingController,
+    private alertCtrl: AlertController,
+    private auth: AuthService,
+    private roteador: Router
+  ) { }
+
+  get email() {
+    return this.credenciais.get('email');
+  }
+
+  get senha() {
+    return this.credenciais.get('senha');
+  }
+
+  ngOnInit() {
+    this.credenciais = this.fb.group({
+      email: ['', [Validators.required, Validators.email]],
+      senha: ['', [Validators.required, Validators.minLength(6)]],
+    });
+  }
+
+  async registrar() {
+    const loading = await this.loadingCtrl.create();
+    await loading.present()
+
+    const usuario = await this.auth.registro(this.credenciais.value);
+    await loading.dismiss();
+
+    if (usuario) {
+      this.roteador.navigateByUrl('/home', { replaceUrl: true });
+    } else {
+      this.showAlert('Falha no login', 'Tente novamente!');
+    }
+  }
+
+  async login() {
+    const loading = await this.loadingCtrl.create();
+    await loading.present();
+
+    const usuario = await this.auth.login(this.credenciais.value);
+    await loading.dismiss();
+
+    if (usuario) {
+      this.roteador.navigateByUrl('/home', { replaceUrl: true });
+    } else {
+      this.showAlert('Falha no login', 'Tente novamente!');
+    }
+  }
+
+  async GoogleLogin() {
+    const loading = await this.loadingCtrl.create();
+    await loading.present();
+    const usuario = await this.auth.loginGoogle();
+    await loading.dismiss();
+
+    if (usuario) {
+      this.roteador.navigateByUrl('/home', { replaceUrl: true });
+    } else {
+      this.showAlert('Falha no login', 'Tente novamente!');
+    }
+  }
+  async showAlert(cabecalho, mensagem) {
+    const alert = await this.alertCtrl.create({
+      header: cabecalho,
+      message: mensagem,
+      buttons: ['OK'],
+    });
+    await alert.present();
+  }
+}
+```
+**Ps:** As explained before, we had create <code>loginGoogle()</code> to use Google credentials to log on our application. Using that, we build <code>GoogleLogin()</code> to make a user object to log in.
+
+The last missing piece is now our view, which we connect with the <code>formGroup</code>  we defined in our page. On top of that we can show some small error messages using the new Ionic 6 **error** slot.
+
+Just make sure that one button inside the form has the **submit** type and therefore triggers the <code>ngSubmit</code> action, while the other has the type **button** if it should just trigger it’s connected click event!
+
+Bring up the **src/app/login/login.page.html** now and change it to:
+
+```
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Suas Notas</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <form (ngSubmit)="login()" [formGroup]="credenciais">
+    <ion-item fill="solid" class="ion-margin-bottom">
+      <ion-input type="email" placeholder="E-mail" formControlName="email"></ion-input>
+      <ion-note slot="error" *ngIf="(email.dirty || email.touched) && email.errors">E-mail inválido</ion-note>
+    </ion-item>
+    <ion-item fill="solid" class="ion-margin-bottom">
+      <ion-input type="password" placeholder="Senha" formControlName="senha" (keyup.enter)="login()"></ion-input>
+      <ion-note slot="error" *ngIf="(senha.dirty || senha.touched) && senha.errors">A senha precisa ter no mínimo 6 caracteres</ion-note>
+    </ion-item>
+
+    <ion-button type="submit" expand="block" [disabled]="!credenciais.valid">Acessar</ion-button>
+    <ion-button type="button" expand="block" color="secondary" (click)="registrar()">Criar conta</ion-button>
+    <ion-button type="button" expand="block" color="danger" (click)="GoogleLogin()">
+      <ion-icon name="logo-google" slot="start"></ion-icon>
+      Login com o Google
+    </ion-button>
+  </form>
+</ion-content>
+```
+You can confirm this by checking the **Authentication** area of your Firebase console and hopefully a new user was created in there!
+
+![image](https://user-images.githubusercontent.com/73944895/187500243-a252f675-e539-4999-9d4f-5d994c373db2.png)
 
 # Working with Firestore Docs & Collections
 
@@ -102,45 +387,52 @@ Now let’s go ahead and change the **src/app/services/data.service.ts** to:
 
 ```
 import { Injectable } from '@angular/core';
-import { Firestore, collection, collectionData, doc, docData, addDoc, deleteDoc, updateDoc } from '@angular/fire/firestore';
+import { Auth } from '@angular/fire/auth';
+import { addDoc, collection, collectionData, deleteDoc, doc, docData, Firestore, updateDoc } from '@angular/fire/firestore';
 import { Observable } from 'rxjs';
- 
-export interface Note {
+
+export interface Nota {
   id?: string;
-  title: string;
-  text: string;
+  titulo: string;
+  texto: string;
 }
- 
 @Injectable({
   providedIn: 'root'
 })
-export class DataService {
- 
-  constructor(private firestore: Firestore) { }
- 
-  getNotes(): Observable<Note[]> {
-    const notesRef = collection(this.firestore, 'notes');
-    return collectionData(notesRef, { idField: 'id'}) as Observable<Note[]>;
+export class DadosService {
+
+  constructor(
+    private firestore: Firestore,
+    private auth: Auth) { }
+
+  getNotas(): Observable<Nota[]> {
+    const usuario = this.auth.currentUser;
+    const notasRef = collection(this.firestore, `usuario/${usuario.uid}/notas`);
+    return collectionData(notasRef, { idField: 'id'}) as Observable<Nota[]>;
   }
- 
-  getNoteById(id): Observable<Note> {
-    const noteDocRef = doc(this.firestore, `notes/${id}`);
-    return docData(noteDocRef, { idField: 'id' }) as Observable<Note>;
+
+  getNotaPorId(id): Observable<Nota> {
+    const usuario = this.auth.currentUser;
+    const notaDocRef = doc(this.firestore, `usuario/${usuario.uid}/notas/${id}`);
+    return docData(notaDocRef, { idField: 'id'}) as Observable<Nota>;
   }
- 
-  addNote(note: Note) {
-    const notesRef = collection(this.firestore, 'notes');
-    return addDoc(notesRef, note);
+
+  addNota(nota: Nota) {
+    const usuario = this.auth.currentUser;
+    const notasRef = collection(this.firestore, `usuario/${usuario.uid}/notas`);
+    return addDoc(notasRef, nota);
   }
- 
-  deleteNote(note: Note) {
-    const noteDocRef = doc(this.firestore, `notes/${note.id}`);
-    return deleteDoc(noteDocRef);
+
+  apagarNota(nota: Nota) {
+    const usuario = this.auth.currentUser;
+    const notaDocRef = doc(this.firestore, `usuario/${usuario.uid}/notas/${nota.id}`);
+    return deleteDoc(notaDocRef);
   }
- 
-  updateNote(note: Note) {
-    const noteDocRef = doc(this.firestore, `notes/${note.id}`);
-    return updateDoc(noteDocRef, { title: note.title, text: note.text });
+
+  atualizarNota(nota: Nota) {
+    const usuario = this.auth.currentUser;
+    const notaDocRef = doc(this.firestore, `usuario/${usuario.uid}/notas/${nota.id}`);
+    return updateDoc(notaDocRef, { titulo: nota.titulo, texto: nota.texto });
   }
 }
 ```
@@ -156,24 +448,28 @@ Get started by changing the **src/app/home/home.page.html** to:
 ```
 <ion-header>
   <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-button (click)="logout()">
+        <ion-icon slot="icon-only" name="log-out"></ion-icon>
+      </ion-button>
+    </ion-buttons>
     <ion-title>
-      Devdactic Notes
+      Minhas notas
     </ion-title>
   </ion-toolbar>
 </ion-header>
- 
-<ion-content>
- 
+
+<ion-content [fullscreen]="true">
   <ion-list>
-    <ion-item *ngFor="let note of notes" (click)="openNote(note)">
+    <ion-item *ngFor="let nota of notas" (click)="abrirNota(nota)">
       <ion-label>
-        {{ note.title }}
+        {{ nota.titulo }}
       </ion-label>
     </ion-item>
   </ion-list>
- 
+  
   <ion-fab vertical="bottom" horizontal="end" slot="fixed">
-    <ion-fab-button (click)="addNote()">
+    <ion-fab-button (click)="addNota()">
       <ion-icon name="add"></ion-icon>
     </ion-fab-button>
   </ion-fab>
@@ -195,66 +491,80 @@ For now open the **src/app/home/home.page.ts** and change it to:
 
 ```
 import { ChangeDetectorRef, Component } from '@angular/core';
+import { Router } from '@angular/router';
 import { AlertController, ModalController } from '@ionic/angular';
-import { DataService, Note } from '../services/data.service';
 import { ModalPage } from '../modal/modal.page';
- 
+import { AuthService } from '../servicos/auth.service';
+import { DadosService, Nota } from '../servicos/dados.service';
+
 @Component({
   selector: 'app-home',
   templateUrl: 'home.page.html',
-  styleUrls: ['home.page.scss']
+  styleUrls: ['home.page.scss'],
 })
 export class HomePage {
-  notes: Note[] = [];
- 
-  constructor(private dataService: DataService,  private cd: ChangeDetectorRef, private alertCtrl: AlertController, private modalCtrl: ModalController) {
-    this.dataService.getNotes().subscribe(res => {
-      this.notes = res;
+  notas: Nota[] = [];
+
+  constructor(
+    private dados: DadosService,
+    private cd: ChangeDetectorRef,
+    private alertCtrl: AlertController,
+    private modalCtrl: ModalController,
+    private auth: AuthService,
+    private roteador: Router,
+  ) {
+    this.dados.getNotas().subscribe(res => {
+      this.notas = res;
       this.cd.detectChanges();
     });
   }
- 
-  async addNote() {
+
+  async logout() {
+    await this.auth.logout();
+    this.roteador.navigateByUrl('/', { replaceUrl: true });
+  }
+  async addNota() {
     const alert = await this.alertCtrl.create({
-      header: 'Add Note',
+      header: 'Nova nota',
       inputs: [
         {
-          name: 'title',
-          placeholder: 'My cool note',
+          name: 'titulo',
+          placeholder: 'Minha nota',
           type: 'text'
         },
         {
-          name: 'text',
-          placeholder: 'Learn Ionic',
+          name: 'texto',
+          placeholder: 'Digite aqui sua nota',
           type: 'textarea'
         }
       ],
       buttons: [
         {
-          text: 'Cancel',
+          text: 'Cancelar',
           role: 'cancel'
         }, {
-          text: 'Add',
+          text: 'Adicionar',
           handler: res => {
-            this.dataService.addNote({ text: res.text, title: res.title });
+            this.dados.addNota({ texto: res.texto, titulo: res.titulo });
           }
         }
       ]
     });
- 
+
     await alert.present();
   }
- 
-  async openNote(note: Note) {
+
+  async abrirNota(nota: Nota) {
     const modal = await this.modalCtrl.create({
       component: ModalPage,
-      componentProps: { id: note.id },
+      componentProps: { id: nota.id },
       breakpoints: [0, 0.5, 0.8],
       initialBreakpoint: 0.8
     });
- 
+
     await modal.present();
   }
+
 }
 ```
 
@@ -272,9 +582,9 @@ Therefore quickly open the **src/app/modal/modal.page.ts** and change it to:
 
 ```
 import { Component, Input, OnInit } from '@angular/core';
-import { Note, DataService } from '../services/data.service';
 import { ModalController, ToastController } from '@ionic/angular';
- 
+import { DadosService, Nota } from '../servicos/dados.service';
+
 @Component({
   selector: 'app-modal',
   templateUrl: './modal.page.html',
@@ -282,30 +592,34 @@ import { ModalController, ToastController } from '@ionic/angular';
 })
 export class ModalPage implements OnInit {
   @Input() id: string;
-  note: Note = null;
- 
-  constructor(private dataService: DataService, private modalCtrl: ModalController, private toastCtrl: ToastController) { }
- 
+  nota: Nota = null;
+
+  constructor(
+    private dados: DadosService,
+    private modalCtrl: ModalController,
+    private toastCtrl: ToastController,
+  ) { }
+
   ngOnInit() {
-    this.dataService.getNoteById(this.id).subscribe(res => {
-      this.note = res;
+    this.dados.getNotaPorId(this.id).subscribe(res => {
+      this.nota = res;
     });
   }
- 
-  async deleteNote() {
-    await this.dataService.deleteNote(this.note)
+
+  async apagarNota() {
+    await this.dados.apagarNota(this.nota);
     this.modalCtrl.dismiss();
   }
- 
-  async updateNote() {
-    await this.dataService.updateNote(this.note);
+
+  async atualizarNota() {
+    await this.dados.atualizarNota(this.nota);
     const toast = await this.toastCtrl.create({
-      message: 'Note updated!.',
+      message: 'Nota atualizada!.',
       duration: 2000
     });
     toast.present();
- 
   }
+
 }
 ```
 
@@ -318,32 +632,31 @@ For the other direction, we still need to press the update button first so let�
 ```
 <ion-header>
   <ion-toolbar color="secondary">
-    <ion-title>Details</ion-title>
+    <ion-title>Detalhes</ion-title>
   </ion-toolbar>
 </ion-header>
- 
+
 <ion-content>
-  <div *ngIf="note">
+  <div *ngIf="nota">
     <ion-item>
-      <ion-label position="stacked">Title</ion-label>
-      <ion-input [(ngModel)]="note.title"></ion-input>
+      <ion-label position="stacked">Título</ion-label>
+      <ion-input [(ngModel)]="nota.titulo"></ion-input>
     </ion-item>
- 
+
     <ion-item>
-      <ion-label position="stacked">Note</ion-label>
-      <ion-textarea [(ngModel)]="note.text" rows="8"></ion-textarea>
+      <ion-label position="stacked">Nota</ion-label>
+      <ion-textarea [(ngModel)]="nota.texto" rows="8"></ion-textarea>
     </ion-item>
   </div>
- 
-  <ion-button expand="block" color="success" (click)="updateNote()">
+
+  <ion-button expand="block" color="success" (click)="atualizarNota()">
     <ion-icon name="save" slot="start"></ion-icon>
-    Update
+    Atualizar
   </ion-button>
-  <ion-button expand="block" color="danger" (click)="deleteNote()">
+  <ion-button expand="block" color="danger" (click)="apagarNota()">
     <ion-icon name="trash" slot="start"></ion-icon>
-    Delete
+    Apagar
   </ion-button>
- 
 </ion-content>
 ```
 
