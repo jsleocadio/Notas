@@ -661,3 +661,172 @@ For the other direction, we still need to press the update button first so let�
 ```
 
 And with that you have successfully finished the basic Firebase integration on which you could now add all further functionalities like user authentication or file upload.
+
+# Push Notifications
+
+Open the **capacitor.config.ts** file and add:
+
+```
+plugins: {
+    PushNotifications: {
+        presentationOptions: [‘badge’, ‘sound’, ‘alert’]
+    }
+}
+```
+
+Now build your app with:
+
+```
+ionic build
+```
+
+# Add Platforms
+
+Add ios and android platforms in your app with:
+
+```
+npx cap add ios
+npx cap add android
+```
+
+In this project, we only used <code>npx cap add android</code>
+
+# Creating an Android App on Firebase Console
+
+Create an android app in firebase by going in project settings page
+
+![image](https://user-images.githubusercontent.com/73944895/188150617-8e343245-d418-4dea-aa03-ff98a0a37f14.png)
+
+Click on android icon to start creating android app
+
+Here write the exact app package id that you see in **capacitor.config.ts** in your project appId. In my case, i use **'com.notas.app'**.
+
+![image](https://user-images.githubusercontent.com/73944895/188150922-a8ef5f98-46d1-4540-b050-d7b44a20bd0c.png)
+
+Download the google-services.json file. We will place this file in our android folder in project
+
+![image](https://user-images.githubusercontent.com/73944895/188151190-c830d7ab-4979-4c36-870c-434657e18caa.png)
+
+Create the firebase project and add google-services.json file in
+
+<code>/push-notifications-app/android/app/google-services.json</code>
+
+![image](https://user-images.githubusercontent.com/73944895/188151363-138bac1e-1ea1-4882-a09f-dcaaf7bf03e0.png)
+
+This is the file that we have downloaded from firebase.
+
+Generate a service using
+
+```
+ionic g service servicos/notificacoes
+```
+
+Install push-notifications with below command
+
+```
+npm install @capacitor/push-notifications
+```
+
+Add this code to your **notificacoes.service.ts**
+
+```
+import { Injectable } from '@angular/core';
+import { Capacitor } from '@capacitor/core';
+import { PushNotifications } from '@capacitor/push-notifications';
+
+@Injectable({
+  providedIn: 'root'
+})
+export class NotificacoesService {
+
+  constructor() { }
+
+  initPush() {
+    if (Capacitor.getPlatform() !== 'web') {
+      this.registerPush();
+    }
+  }
+
+  private registerPush() {
+    PushNotifications.requestPermissions().then(permissao => {
+      if (permissao.receive === 'granted') {
+        PushNotifications.register();
+      }
+    });
+
+    PushNotifications.addListener('registration', (token) => {
+      console.log(token);
+    });
+
+    PushNotifications.addListener('registrationError', (err) => {
+      console.error(err);
+    });
+
+    PushNotifications.addListener('pushNotificationReceived', (notifications) => {
+      console.log(notifications);
+    });
+  }
+}
+```
+
+Add in your **app.component.ts** below lines:
+
+```
+import { Component } from '@angular/core';
+import { NotificacoesService } from './servicos/notificacoes.service';
+
+@Component({
+  selector: 'app-root',
+  templateUrl: 'app.component.html',
+  styleUrls: ['app.component.scss'],
+})
+export class AppComponent {
+  constructor(public pushNotifications: NotificacoesService) {
+    this.pushNotifications.initPush();
+  }
+}
+```
+
+Start your android app you will see push notification logs and events being registered in console
+
+There you will find token value of your device. This is the value that you will use to send push notification to your device.
+
+# Send notification via Postman
+
+Send a push notification with postman
+
+![image](https://user-images.githubusercontent.com/73944895/188152441-6267eb13-1e1a-4bea-8a8a-01c72ca26269.png)
+
+```
+Method: POST
+Request: https://fcm.googleapis.com/fcm/send
+Headers:
+Content-Type: application/json
+Authorization: key=serverKeyHere
+(i.e key=AAAAu98LJFM:APA91bGNbjxQ95RELBLAfrdiC99W6dDbG1FGAhsv7p8uWcs9qtggdJYW8xM7Jq-JGAOE0igyu36H7xFw0i0pP6_UAsQCiTU4yA_GBVYiwTLuFifuVcn0jPRePOE-t1SCt2aVBsbP1UGr3XEjTZBDQ9DyIJq4GAT )
+Request Payload:
+{
+    “to”:”fOa_XtyIRXKFGmNrS5JcXz:APA91bHJ41E-DX4NQ7ykS6Qlhrpo5ARHWbApxHPWNMM1i_olg3a2kjixjaAFH4hb44kkf65-WCpJeZo-1rdhJjjv0pMSUFZuWbHkZhbpBC1njnV7MTfpGS0vTjjGCep_KcUW3P8QewAQ”,
+    “notification”**: {
+        “title”: “Order #43”,
+        “body”: “There’s a new pickup order in line!”,
+        “sound”: “default” 
+    }
+}
+```
+
+**Note:** Replace token in **“to”** with token you received from firebase in your console.
+
+Now send Request and you will receive background message.
+
+**Note:** Background messages are messages that you receive when your app is opened in some tab which is not active. You can get server key from firebase console as shown here
+
+# Receive Foreground Push notifications
+
+To receive push notifications when your application is opened you need to create a custom component which will load whenever a new message is received via **pushNotificationReceived** event listener from firebase.
+
+![image](https://user-images.githubusercontent.com/73944895/188153135-6ab849c4-e192-4816-99e0-e42781a0f86a.png)
+
+Now you can see that a notification is received in the console.
+
+**Note:** I highly recommend using the Firebase Console to send Push Notifications. It's simple and easy to do it.
