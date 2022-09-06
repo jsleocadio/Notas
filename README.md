@@ -1,24 +1,24 @@
-# Creating the Firebase Project
+# Criando o Projeto no Firabase
 
-Before we dive into the Ionic app, we need to make sure we actually have a Firebase app configured. If you already got something in place you can of course skip this step.
+Antes de iniciarmos no App Ionic, precisamos ter certeza que o Firebase App está configurado. Se você já tem uma configuração salva e desejar utilizá-la, pode pular esta etapa.
 
-Otherwise, make sure you are signed up (it’s free) and then hit **Add project** inside the [Firebase console](https://console.firebase.google.com/). Give your new app a name, select a region and then create your project!
+Caso contrário, tenha certeza de se registrar (é grátis) e então clique em **Adicionar projeto** dentro do [console do Firebase](https://console.firebase.google.com/). Dê um nome ao seu novo aplicativo, selecione uma região e então crie seu projeto!
 
-Once you have created the project you need to find the web configuration which looks like this:
+Uma vez que você criou o projeto, você precisa encontrar a configuração web, que parece um pouco com isto:
 
 ![image](https://user-images.githubusercontent.com/73944895/187245878-2cec7029-c923-48d7-b1ee-02c43ee38b9e.png)
 
-If it’s a new project, click on the web icon below “**Get started by adding Firebase to your app**” to start a new web app and give it a name, you will see the configuration in the next step now.
+Se é um novo projeto, clique no icone web abaixo "**Adicionar o Firebase ao seu app da Web**" para iniciar um novo web app e dá-lo um nome, você verá as configurações no próximo passo.
 
-Leave this config block open (or copy it already) until our app is ready so we can insert it in our environment!
+Deixe este bloco de configuração aberto (ou o copie) até que o nosso aplicativo esteja pronto e assim adicionarmos em nosso *ambiente* (environment)!
 
-Additionally we have to enable the database, so select **Firestore Database** from the menu and click **Create database**.
+Adicionalmente nós podemos habilitar o banco de dados, então selecione **Firestore Database** do menu e clique em **Criar database**.
 
 ![image](https://user-images.githubusercontent.com/73944895/187247222-d3c33246-509f-4b9e-90eb-1bb2db27bb13.png)
 
-Here we can set the default **security rules** for our database and because this is a simple tutorial we’ll roll with the **test mode** which allows everyone access.
+Aqui podemos definir as **regras de segurança** padrão para nosso banco de dados, como estamos apenas testando, rodaremos em **modo de teste** que permite o acesso de todos.
 
-Because we want to work with users we also need to go to the **Authentication** tab, click **Get started** again and activate the **Email/Password** provider. This allows us to create user with a standard email/ps combination.
+Por causa que queremos trabalhar com usuários, também precisaremos ir a guia **Authentication**, clique em **Começar experimento** novamente e ative o provedor **Email/Senha**. Com isto, poderemos criar usuários com a combinação padrão de e-mail/senha.
 
 ![image](https://user-images.githubusercontent.com/73944895/187490868-8fa6d73e-e20d-4295-8e9c-96399567241b.png)
 
