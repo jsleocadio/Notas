@@ -140,16 +140,15 @@ export class AppRoutingModule { }
 ```
 Agora nós podemos iniciar a autenticação de usuários!
 
-# Building the Authentication Logic
+# Construindo a Lógica de Autenticação
 
-The whole logic will be in a separate service, and we need jsut three functions that simply call the according Firebase function to create a new user, sign in a user or end the current session.
+A lógica inteira ficará em um serviço separado, e precisaremos apenas de três funções que simplesmente chamará a função Firebase correspondente a criar novo usário, o acesso de um usuário ou o fim de uma sessão atual.
 
-For all these calls you need to add the **Auth** reference, which we injected inside the constructor.
+Para todas estas chamadas precisaremos adicionar a referência **Auth**, que será injetada no construtor.
 
-Since these calls sometimes fail and I wasn’t very happy about the error handling, I wrapped them in try/catch blocks so we have an easier time when we get to our actual page.
+Afim de minimizar as falhas nas chamadas das funções, usaremos blocos try/catch para facilitar quando formos para nossa página atual.
 
-Let’s begin with the **src/app/services/auth.service.ts** now and change it to:
-
+Vamos começar com o **src/app/services/auth.service.ts** e modificá-lo para:
 ```
 import { Injectable } from '@angular/core';
 import { Auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, signOut, GoogleAuthProvider, getAuth } from '@angular/fire/auth';
@@ -201,10 +200,9 @@ export class AuthService {
 }
 ```
 
-**Ps:** <code>loginGoogle()</code> was created to implements a login through Google credentials. The method <code>signInWithPopup()</code> requires an auth and a provider.
+**Obs:** <code>loginGoogle()</code> foi criado para implementar o login atráves da credencial do Google. O método <code>signInWithPopup()</code> além do **Auth**, solicitará um provedor, neste caso o **GoogleAuthProvider**.
 
-That’s already everything in terms of logic. Now we need to capture the user information for the registration, and therefore we import the <code>ReactiveFormsModule</code> in our **src/app/login/login.module.ts** now:
-
+Isto é tudo em termos de lógica. Agora, precisamos capturar as informações do usuário para registro, e, portanto, importaremos o <code>ReactiveFormsModule</code> em nosso **src/app/login/login.module.ts**:
 ```
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -228,15 +226,13 @@ import { LoginPage } from './login.page';
 })
 export class LoginPageModule {}
 ```
+Como queremos algo simples, lidaremos com o registro e signup com o mesmo formulário numa única página.
 
-Since we want to make it easy, we’ll handle both registration and signup with the same form on one page.
+Como já adicionamos toda a lógica a um serviço, não há muito o que além de mostrar um indicador de carregamento casual ou apresentar um alerta se uma ação falhar.
 
-But since we added the whole logic already to a service, there’s not much left for us to do besides showing a casual loading indicator or presenting an alert if the action failed.
+Se o registro ou login foi um sucesso e tivermos como retorno um objeto **usuario**, imediatamente guiaremos o usuário para nossa área logada.
 
-If the registration or login is successful and we get back an **user** object, we immediately route the user forward to our inside area.
-
-Go ahead by changing the **src/app/login/login.page.ts** to:
-
+Siga mudando o **src/app/login/login.page.ts** para:
 ```
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -325,14 +321,13 @@ export class LoginPage implements OnInit {
   }
 }
 ```
-**Ps:** As explained before, we had create <code>loginGoogle()</code> to use Google credentials to log on our application. Using that, we build <code>GoogleLogin()</code> to make a user object to log in.
+**Obs:** Como explicado anteriormente, criamos <code>loginGoogle()</code> para usarmos as credenciais do Google para entrar em nossa aplicação. Usando-o, construímos <code>GoogleLogin()</code> para criar um objeto **usuario** para acessar a área logada.
 
-The last missing piece is now our view, which we connect with the <code>formGroup</code>  we defined in our page. On top of that we can show some small error messages using the new Ionic 6 **error** slot.
+A última peça faltando em nossa vista, cujo conectamos com o <code>formGroup</code> definida em nossa página. Com isto, podemos mostrar pequenas mensagem de erros usando o novo slot de **error** do Ionic 6.
 
-Just make sure that one button inside the form has the **submit** type and therefore triggers the <code>ngSubmit</code> action, while the other has the type **button** if it should just trigger it’s connected click event!
+Tenha certeza que um dos botões dentro do formulário tenha o tipo **submit** e portanto inicie a ação do <code>ngSubmit</code>, enquanto os outros tenha o tipo **button** que só deve ser ativado ao evento conectado ao <code>(click)=""</code>!
 
-Bring up the **src/app/login/login.page.html** now and change it to:
-
+Vamos para o **src/app/login/login.page.html** e modificá-lo para:
 ```
 <ion-header>
   <ion-toolbar color="primary">
@@ -360,7 +355,7 @@ Bring up the **src/app/login/login.page.html** now and change it to:
   </form>
 </ion-content>
 ```
-You can confirm this by checking the **Authentication** area of your Firebase console and hopefully a new user was created in there!
+Você pode confirmar checando a área **Authentication** do seu console do Firebase e um novo usuário foi criado lá!
 
 ![image](https://user-images.githubusercontent.com/73944895/187500243-a252f675-e539-4999-9d4f-5d994c373db2.png)
 
