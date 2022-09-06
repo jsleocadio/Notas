@@ -359,24 +359,23 @@ Você pode confirmar checando a área **Authentication** do seu console do Fireb
 
 ![image](https://user-images.githubusercontent.com/73944895/187500243-a252f675-e539-4999-9d4f-5d994c373db2.png)
 
-# Working with Firestore Docs & Collections
+# Trabalhando com o Firestore Docs e Collections
 
-As a first step we will create a service that interacts with Firebase and loads our data. It’s always a good idea to outsource your logic into a service!
+Como primeiro passo, criaremos um serviço que interagirá com o Firebase e carregará nossos dados. É sempre uma boa ideia 'externar' sua lógica num serviço!
 
-To work with Firestore in the latest version we need to inject the **Firestore** instance into every call, so we import it within our constructor and later use it in our CRUD functions. On top of that we simply create a **reference** to the path in our Firestore database to either a **collection** or **document**.
+Para trabalhar com o Firestore na última versão precisaremos injetar a instância do **Firestore** em cada chamada, então importaremos em nosso construtor e, depois, usaremos em nossas funções CRUD (**C**reate, **R**ead, **U**pdate, **D**elete). Além disso, criaremos uma referência para o caminho em nosso banco de dados Firestore para, seja uma **collection** ou um **document**.
 
-Let’s go through each of them:
+Vamos passar um a um:
 
-* <code>getNotes</code>: Access the **notes** collection and query the data using <code>collectionData()</code>
-* <code>getNoteById</code>: Access one document in the notes collection and return the data with <code>docData()</code>
-* <code>addNote</code>: With a reference to the notes collection we use <code>addDoc()</code> to simply push a new document to a collection where a unique ID is generated for it
-* <code>deleteNote</code>: Delete a document at a specific path using <code>deleteDoc()</code>
-* <code>updateNote</code>: Create a reference to one document and update it through <code>updateDoc()</code>
+* <code>getNotas</code>: Acessa a collection de **notas** e consulta os dados usando <code>collectionData()</code>
+* <code>getNotaPorId</code>: Acessa um documento na collection de notas e retorna o dado com <code>docData()</code>
+* <code>addNota</code>: Com a referência para a collection de notas, utilizamos <code>addDoc()</code> para colocar um novo documento em uma collection onde um ID único é gerado para ele
+* <code>apagarNota</code>: Apaga um documento num caminho específico utilizando <code>deleteDoc()</code>
+* <code>atualizarNota</code>: Cria uma referência a um documento e o atualiza atráves do <code>updateDoc()</code>
 
-For our first functions we also pass in an options object that contains <code>idField</code>, which helps to easily include the ID of a document in the response!
+Para nossas primeiras funções passaremos em um objeto opções que contém code>idField</code>, que auxiliará a incluir o ID de um documento na resposta!
 
-Now let’s go ahead and change the **src/app/services/data.service.ts** to:
-
+Agora vamos alterar o **src/app/services/data.service.ts** para:
 ```
 import { Injectable } from '@angular/core';
 import { Auth } from '@angular/fire/auth';
@@ -428,8 +427,9 @@ export class DadosService {
   }
 }
 ```
+Com tudo isto no lugar, estamos prontos para construir algumas funcionalidades graças ao nosso serviço.
 
-With all of that in place we are ready to build some functionality on top of our service.
+**Obs:** Foi feita a inclusão do **Auth** no construtor afim de que a página seja única para cada usuário. Com a inclusão o ID de usuário no caminho apenas aquele usuário terá acesso as suas notas.
 
 # Load and add to Firestore Collections
 
