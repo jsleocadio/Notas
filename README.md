@@ -22,31 +22,30 @@ Por causa que queremos trabalhar com usuários, também precisaremos ir a guia *
 
 ![image](https://user-images.githubusercontent.com/73944895/187490868-8fa6d73e-e20d-4295-8e9c-96399567241b.png)
 
-# Starting our Ionic App & Firebase Integration
+# Iniciando nosso App Ionic & Integração com Firebase
 
-Now we are ready to setup the Ionic app, so generate a new app with an additional page and service for our logic and then use the AngularFire schematic to add all required packages and changes to the project:
+Agora estamos prontos para iniciar o App Ionic, então geraremos um novo app com duas páginas adicionais e dois serviços para nosso lógica e então usaremos a esquemática do AngularFire para adicionarmos todos os pacotes requeridos e mudanças ao projeto: 
 
 ```
 ionic start ProjectName blank --type=angular --capacitor
 cd ./ProjectName
  
-# Generate a page and service
+# Gerar páginas e serviços
 ionic g page login
 ionic g page modal
 ionic g service services/auth
 ionic g service services/data
 
-# Install Firebase and AngularFire
+# Instalar o Firebase e o AngularFire
 ng add @angular/fire
 ```
-The last command is the most important as it starts the AngularFire schematic, which has become a lot more powerful over the years! You should select the according functions that your app needs, in our case select Authentication and Firestore.
+O último comando é o mais importante pois iniciar a esquemática do AngularFire. Você deve selecionar de acordo com as funções que seu app precisa, no nosso caso Authentication e Firestore.
 
 ![image](https://user-images.githubusercontent.com/73944895/187491615-5b81d564-49c4-4619-938d-a1e051a2c9ad.png)
 
-After that a browser will open to log in with Google, which hopefully reads your list of **Firebase apps so you can select the Firebase project and app your created in the beginning!**
+Depois que o navegador abrir para logar com sua conta do Google, cujo, lerá sua lista de **Firebase apps so you can select the Firebase project and app your created in the beginning!**
 
-As a result the schematic will automatically fill your **environments/environment.ts** file – if not make sure you manually add the Firebase configuration from the first step like this:
-
+Como resultado da esquemática irá automaticamente preencher seu arquivo **environments/environment.ts** - se não, preenchar manualmente as configurações do Firebase da primeira etapa da seguinte forma:
 ```
 export const environment = {
   production: false,
@@ -60,9 +59,7 @@ export const environment = {
   }
 };
 ```
-
-On top of that the schematic injected everything necessary into our **src/app/app.module.ts** using the new Firebase 9 modular approach:
-
+O melhor de tudo é que a esquemática injetou todo o necessário em nosso **src/app/app.module.ts** usando a abordagem do Firebase 9:
 ```
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
@@ -88,16 +85,16 @@ import { provideFirestore,getFirestore } from '@angular/fire/firestore';
 })
 export class AppModule {}
 ```
-Again, if the schematic failed for some reason that’s how your module should look like before you continue!
+De novo, se a esquemática falhar por algum motivo, é assim que seu modulo deve ficar antes de continuar!
 
-Now we can also quickly touch the routing of our app to display the login page as the first page, and use the default home page for the inside area.
+Agora, iremos rapidamente alterar o roteamento de nosso aplicativo para mostrar a página de login como a primeira página, e usar a página *home* padrão para a área logada.
 
-We don’t have authentication implemented yet, but we can already use the [AngularFire auth guards](https://github.com/angular/angularfire/blob/master/docs/auth/router-guards.md) in two cool ways:
+Nós não implementamos a autenticação ainda, porém, nós já podemos utilizar o [AngularFire auth guards](https://github.com/angular/angularfire/blob/master/docs/auth/router-guards.md) de duas formas:
 
-* Protect access to “inside” pages by redirecting unauthorized users to the login
-* Preventing access to the login page for previously authenticated users, so they are automatically forwarded to the “inside” area of the app
+* Proteger o acesso de páginas "internas" redirecionando usuários não autorizados para a página de login
+* Prevenir o acesso à página de login de usuários anteriormente autenticados, assim, eles são automaticamente direcionados para a área "logada" do app
 
-This is done with the helping pipes and services of AngularFire that you can now add inside the **src/app/app-routing.module.ts**:
+Isto é feito com a ajuda de serviços do AngularFire que você pode adicionar dentro do seu **src/app/app-routing.module.ts**:
 
 ```
 import { NgModule } from '@angular/core';
@@ -141,7 +138,7 @@ const routes: Routes = [
 })
 export class AppRoutingModule { }
 ```
-Now we can begin with the actual authentication of users!
+Agora nós podemos iniciar a autenticação de usuários!
 
 # Building the Authentication Logic
 
