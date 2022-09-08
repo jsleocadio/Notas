@@ -560,14 +560,13 @@ export class HomePage {
 
 Agora, precisamos implementar o modal com algumas funcionalidades.
 
-# Update and Delete Firestore Documents
+# Atualizar e Apagar Documentos do Firestore
 
-The last step is loading the detail data of a document, which you can do by using the ID that we define as <code>@Input()</code> and getting the document data from our service.
+O último passo é carregar os dados de detalhamento de um documento, o qual você o faŕa usando o ID que definimos como <code>@Input()</code> e pegaremos os dados do nosso serviço.
 
-The other functions to delete and update a document work the same, simply by calling our service functionalities.
+As outras funções para apagar e atualizar um documento funcionaŕa da mesma forma, simplesmente por chamar as funcionalidades de nosso serviço.
 
-Therefore quickly open the **src/app/modal/modal.page.ts** and change it to:
-
+De antemaão, abra o **src/app/modal/modal.page.ts**  e mude-o para:
 ```
 import { Component, Input, OnInit } from '@angular/core';
 import { ModalController, ToastController } from '@ionic/angular';
@@ -610,13 +609,11 @@ export class ModalPage implements OnInit {
 
 }
 ```
+O legal é que nosso **documento é atualizado em tempo real**, como a lista baseada em nossa collection em nossa página anterior.
 
-The cool thing is that our **document is also updated in realtime**, just like the list based on the collection on our previous page.
+Desde que conectemos nosso campos de inputs <code>ngModel</code> com nossa nota,poderemos diretamente atualizar os dados dentro do Firestore e ver as mudanças em nosso app.  
 
-So since we can now connect our <code> ngModel</code>  input fields with our note, you could directly update the data inside Firestore and see the change in your Ionic app.
-
-For the other direction, we still need to press the update button first so let’s wrap up the tutorial by adding the last items to show the input fields and two buttons to trigger all actions inside the **src/app/modal/modal.page.html**:
-
+Por outro lado, nós precisamos apertar o botão atualizar primeiro. Então, vamos adicionar os últimos itens para mostrar os campos de input e os dois botões que ativará todas as ações dentro do **src/app/modal/modal.page.html**:
 ```
 <ion-header>
   <ion-toolbar color="secondary">
@@ -647,8 +644,6 @@ For the other direction, we still need to press the update button first so let�
   </ion-button>
 </ion-content>
 ```
-
-And with that you have successfully finished the basic Firebase integration on which you could now add all further functionalities like user authentication or file upload.
 
 # Push Notifications
 
