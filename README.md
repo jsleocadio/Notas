@@ -1,4 +1,4 @@
-# Criando o Projeto no Firabase
+# Criando o Projeto no Firebase
 
 Antes de iniciarmos no App Ionic, precisamos ter certeza que o Firebase App está configurado. Se você já tem uma configuração salva e desejar utilizá-la, pode pular esta etapa.
 
@@ -373,7 +373,7 @@ Vamos passar um a um:
 * <code>apagarNota</code>: Apaga um documento num caminho específico utilizando <code>deleteDoc()</code>
 * <code>atualizarNota</code>: Cria uma referência a um documento e o atualiza atráves do <code>updateDoc()</code>
 
-Para nossas primeiras funções passaremos em um objeto opções que contém code>idField</code>, que auxiliará a incluir o ID de um documento na resposta!
+Para nossas primeiras funções passaremos em um objeto opções que contém <code>idField</code>, que auxiliará a incluir o ID de um documento na resposta!
 
 Agora vamos alterar o **src/app/services/data.service.ts** para:
 ```
@@ -431,12 +431,11 @@ Com tudo isto no lugar, estamos prontos para construir algumas funcionalidades g
 
 **Obs:** Foi feita a inclusão do **Auth** no construtor afim de que a página seja única para cada usuário. Com a inclusão o ID de usuário no caminho apenas aquele usuário terá acesso as suas notas.
 
-# Load and add to Firestore Collections
+# Carregar e adicionar Collections do Firebase
 
-First of all we want to display a list with the collection data, so let’s create a quick template first. We add a click event to every item, and additionally use a FAB button to create new notes for our collection.
+Primeiro de tudo, nós queremos mostrar uma lista com os dados da collection, então, primeiramente criaremos um template rápido. Adicionaremos um evento de clique para cada item, e adicionalmente usaremos um botão FAB para criar novas notas para nossa collection.
 
-Get started by changing the **src/app/home/home.page.html** to:
-
+Começaremos mudando o **src/app/home/home.page.html** para:
 ```
 <ion-header>
   <ion-toolbar color="primary">
@@ -468,19 +467,17 @@ Get started by changing the **src/app/home/home.page.html** to:
   
 </ion-content>
 ```
+Como já tinhamos criado a lógica por trás do carregamento de dados, simplesmente iremos executá-la de nosso serviço e alocá-lo para nosso vetor de <code>notas</code>.
 
-Since we have created the logic to load the data before, we now simply load the data from our service and assign it to our local <code>notes</code> array.
+Para adicionar uma nova nota usaremos o [Controlador de alertas do Ionic](https://ionicframework.com/docs/api/alert) e dois inputs simples para capturar o título e texto para uma nova nota.
 
-To add a new note we can use the [Ionic alert controller](https://ionicframework.com/docs/api/alert) and two simple inputs to capture a title and text for a new note.
+Com estas informações nós podemos chamar <code>addNota()</code> do nosso serviço para criar uma nova nota em nossa collection do Firestore.
 
-With that information we can call <code>addNote()</code> from our service to create a new note in our Firestore collection.
+Não precisaremos de nenhuma lógica adicional para recarregar nossa collection - visto que nós atribuímos a um Observable que a retorna, com isto, **automaticamente, receberemos novos dados!**
 
-We don’t need any additional logic to reload the collection data – since we are subscribed to an Observable that returns our collection data we will **automatically receive the new data!**
+Para mostrar os detalhes de uma nota criaremos um modal utilizando a nova versão do Sheet Modal do Ionic 6 com breakpoints. Nós passaremos o ID da nota que desejamos abrir, então depois carregaremos os dados atráves do nosso serviço. 
 
-To show the details for a note (as a little exercise) we create a new modal using the Ionic 6 sheet version with breakpoints which looks pretty cool. We pass in the ID of the note we want to open, so we can later load its data through our service.
-
-For now open the **src/app/home/home.page.ts** and change it to:
-
+Por hora, abra o **src/app/home/home.page.ts** e mude-o para:
 ```
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { Router } from '@angular/router';
@@ -559,10 +556,9 @@ export class HomePage {
 
 }
 ```
+**Nota:** Inicialmente tive que usar o <code>ChangeDetectorRef</code> do Angular e manualmente ativar a detecção de mudança para atualizar a view, em teste posteriores funcionou sem ele. Veja se funciona para você, pois é bem provável que não precise desta parte.
 
-**Note:** Initially I had to use the Angular <code>ChangeDetectorRef</code>  and manually trigger a change detection to update the view, in later tests it worked without. See what works for you, most likely you don’t need that part.
-
-Now we just need to implement the modal with some additional functionality.
+Agora, precisamos implementar o modal com algumas funcionalidades.
 
 # Update and Delete Firestore Documents
 
